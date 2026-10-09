@@ -1,0 +1,10 @@
+{
+  "name": "hindsight",
+  "version": "0.1.0",
+  "description": "Memory for Claude Code: search every past session by meaning, and turn your corrections into durable rules.",
+  "author": {"name": "El Mahdi Moubarak", "url": "https://github.com/emoubarak"},
+  "homepage": "https://github.com/emoubarak/hindsight",
+  "repository": "https://github.com/emoubarak/hindsight",
+  "license": "MIT",
+  "keywords": ["memory", "search", "sessions", "hooks", "learning", "rules"]
+}

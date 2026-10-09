@@ -1,0 +1,15 @@
+{
+  "name": "hindsight",
+  "owner": {
+    "name": "El Mahdi Moubarak",
+    "url": "https://github.com/emoubarak"
+  },
+  "plugins": [
+    {
+      "name": "hindsight",
+      "source": "./",
+      "description": "Memory for Claude Code: search past sessions by meaning, turn corrections into durable rules."
+    }
+  ],
+  "description": "Hindsight: memory for Claude Code. Search every past session, turn your corrections into rules."
+}

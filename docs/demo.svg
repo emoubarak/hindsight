@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 420" width="900" height="420" role="img" aria-labelledby="t d">
+  <title id="t">Hindsight in a session</title>
+  <desc id="d">The user asks if Claude remembers how staging is deployed; a hook injects the matching past message; Claude answers from it.</desc>
+  <style>
+    :root { --bg:#faf8f4; --win:#ffffff; --bar:#efeae0; --ink:#1d1b17; --mute:#6b665c; --accent:#b4440f; --accent2:#2f6f5e; --line:#d9d3c7; }
+    @media (prefers-color-scheme: dark) { :root { --bg:#14130f; --win:#1b1a15; --bar:#26241d; --ink:#f1ede4; --mute:#a39d90; --accent:#f08a4b; --accent2:#6fcfb0; --line:#3a372f; } }
+    text { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 15px; fill: var(--ink); }
+    .m { fill: var(--mute); } .u { fill: var(--accent); } .g { fill: var(--accent2); }
+  </style>
+  <rect width="900" height="420" fill="var(--bg)"/>
+  <rect x="20" y="20" width="860" height="380" rx="12" fill="var(--win)" stroke="var(--line)"/>
+  <path d="M20 32a12 12 0 0 1 12-12h836a12 12 0 0 1 12 12v22H20z" fill="var(--bar)"/>
+  <circle cx="44" cy="37" r="6" fill="#ec6a5e"/><circle cx="66" cy="37" r="6" fill="#f4bf4f"/><circle cx="88" cy="37" r="6" fill="#61c554"/>
+  <text x="450" y="42" text-anchor="middle" class="m" style="font-size:13px">~/work/api · claude</text>
+
+  <text x="44" y="96"><tspan class="u">&gt; </tspan>do you remember how we deploy the api to staging?</text>
+
+  <text x="44" y="140" class="m">  UserPromptSubmit hook · hindsight</text>
+  <text x="44" y="166" class="g">  1. 2026-09-01 ~/work/api · Staging deploy (msg)</text>
+  <text x="44" y="190" class="m">     User: how do we deploy the api to staging?</text>
+  <text x="44" y="212" class="m">     Claude: Run `make deploy ENV=staging`; the key is read from the vault.</text>
+
+  <text x="44" y="262">● Yes, from the session of September 1st: <tspan class="g">make deploy ENV=staging</tspan>,</text>
+  <text x="44" y="286">  with the key read from the vault. Running it now.</text>
+
+  <text x="44" y="344" class="m">  No “can you remind me?” No pasting. No searching the history by hand.</text>
+</svg>

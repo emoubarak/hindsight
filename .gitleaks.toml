@@ -1,0 +1,4 @@
+# The test suite contains deliberately fake secrets to prove that redaction masks them.
+[allowlist]
+description = "fake secrets in tests"
+paths = ['''tests/''']

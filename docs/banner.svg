@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 320" width="1280" height="320" role="img" aria-labelledby="t d">
+  <title id="t">Hindsight</title>
+  <desc id="d">Memory for Claude Code: a timeline of past sessions, a search over them, and corrections turned into rules.</desc>
+  <style>
+    :root { --bg:#faf8f4; --ink:#1d1b17; --mute:#6b665c; --line:#d9d3c7; --card:#ffffff; --accent:#b4440f; --accent2:#2f6f5e; }
+    @media (prefers-color-scheme: dark) { :root { --bg:#14130f; --ink:#f1ede4; --mute:#a39d90; --line:#3a372f; --card:#1e1d18; --accent:#f08a4b; --accent2:#6fcfb0; } }
+    text { font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+    .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+  </style>
+  <rect width="1280" height="320" fill="var(--bg)"/>
+  <text x="72" y="148" font-size="76" font-weight="700" fill="var(--ink)" letter-spacing="-2">hindsight</text>
+  <text x="74" y="196" font-size="26" fill="var(--mute)">Memory for Claude Code.</text>
+  <text x="74" y="232" font-size="20" fill="var(--mute)">Search every past session. Turn your corrections into rules.</text>
+
+  <!-- timeline -->
+  <line x1="700" y1="160" x2="1210" y2="160" stroke="var(--line)" stroke-width="2"/>
+  <g fill="var(--line)">
+    <circle cx="720" cy="160" r="5"/><circle cx="780" cy="160" r="5"/><circle cx="850" cy="160" r="5"/>
+    <circle cx="920" cy="160" r="5"/><circle cx="1010" cy="160" r="5"/>
+  </g>
+  <!-- cards -->
+  <g>
+    <rect x="690" y="62" width="250" height="62" rx="10" fill="var(--card)" stroke="var(--line)"/>
+    <text x="708" y="88" font-size="13" fill="var(--mute)" class="mono">Sep 1 · api · session</text>
+    <text x="708" y="110" font-size="16" fill="var(--ink)">“how do we deploy to staging?”</text>
+    <line x1="780" y1="124" x2="780" y2="155" stroke="var(--line)" stroke-width="2"/>
+  </g>
+  <g>
+    <rect x="860" y="196" width="250" height="62" rx="10" fill="var(--card)" stroke="var(--accent)" stroke-width="2"/>
+    <text x="878" y="222" font-size="13" fill="var(--accent)" class="mono">correction · 3rd time</text>
+    <text x="878" y="244" font-size="16" fill="var(--ink)">“I told you, no comments.”</text>
+    <line x1="920" y1="165" x2="920" y2="196" stroke="var(--accent)" stroke-width="2"/>
+  </g>
+  <g>
+    <rect x="980" y="62" width="240" height="62" rx="10" fill="var(--card)" stroke="var(--accent2)" stroke-width="2"/>
+    <text x="998" y="88" font-size="13" fill="var(--accent2)" class="mono">rule · CLAUDE.md</text>
+    <text x="998" y="110" font-size="16" fill="var(--ink)">Skip comments. Say why.</text>
+    <line x1="1010" y1="124" x2="1010" y2="155" stroke="var(--accent2)" stroke-width="2"/>
+  </g>
+  <!-- search glass -->
+  <g transform="translate(1150 200)" fill="none" stroke="var(--ink)" stroke-width="5" stroke-linecap="round">
+    <circle cx="0" cy="0" r="22"/><line x1="16" y1="16" x2="38" y2="38"/>
+  </g>
+</svg>

@@ -1,0 +1,55 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1100 430" width="1100" height="430" role="img" aria-labelledby="t d">
+  <title id="t">How Hindsight works</title>
+  <desc id="d">Transcripts are distilled into a local corpus and an index. A hook answers recall questions from the index. Corrections are logged and digested by the learn skill into rules.</desc>
+  <style>
+    :root { --bg:#faf8f4; --ink:#1d1b17; --mute:#6b665c; --line:#cfc8ba; --card:#ffffff; --accent:#b4440f; --accent2:#2f6f5e; }
+    @media (prefers-color-scheme: dark) { :root { --bg:#14130f; --ink:#f1ede4; --mute:#a39d90; --line:#4a463b; --card:#1e1d18; --accent:#f08a4b; --accent2:#6fcfb0; } }
+    text { font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; fill: var(--ink); }
+    .s { font-size: 13px; fill: var(--mute); } .h { font-size: 16px; font-weight: 600; }
+    .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 12px; fill: var(--mute); }
+    .box { fill: var(--card); stroke: var(--line); stroke-width: 1.5; }
+    .a { stroke: var(--line); stroke-width: 2; fill: none; marker-end: url(#ar); }
+    .ra { stroke: var(--accent); } .ga { stroke: var(--accent2); }
+  </style>
+  <defs><marker id="ar" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="var(--mute)"/></marker></defs>
+  <rect width="1100" height="430" fill="var(--bg)"/>
+
+  <rect class="box" x="30" y="165" width="210" height="86" rx="12"/>
+  <text class="h" x="50" y="197">Your sessions</text>
+  <text class="mono" x="50" y="220">~/.claude/projects/</text>
+  <text class="s" x="50" y="240">transcripts expire</text>
+
+  <rect class="box" x="320" y="165" width="240" height="86" rx="12"/>
+  <text class="h" x="340" y="197">Corpus + index</text>
+  <text class="s" x="340" y="220">secrets redacted, kept for good</text>
+  <text class="s" x="340" y="240">keywords + optional embeddings</text>
+  <path class="a" d="M240 208 H318"/>
+  <text class="mono" x="250" y="198">mine.py</text>
+
+  <rect class="box" x="590" y="40" width="230" height="86" rx="12" style="stroke:var(--accent2)"/>
+  <text class="h" x="610" y="72">recall (hook + skill)</text>
+  <text class="s" x="610" y="95">“do you remember…” → top 3</text>
+  <text class="s" x="610" y="113">hits land in Claude’s context</text>
+  <path class="a ga" d="M560 190 C575 190 575 100 588 100"/>
+
+  <rect class="box" x="590" y="290" width="230" height="100" rx="12" style="stroke:var(--accent)"/>
+  <text class="h" x="610" y="322">learn (hook + skill)</text>
+  <text class="s" x="610" y="345">spots “I told you…” as you type,</text>
+  <text class="s" x="610" y="363">logs it, digests it on demand</text>
+  <path class="a ra" d="M560 230 C575 230 575 340 588 340"/>
+
+  <rect class="box" x="900" y="290" width="170" height="100" rx="12"/>
+  <text class="h" x="918" y="322">Rules</text>
+  <text class="s" x="918" y="345">hook, skill, CLAUDE.md,</text>
+  <text class="s" x="918" y="363">or a project memory</text>
+  <path class="a ra" d="M820 340 H898"/>
+
+  <rect class="box" x="900" y="40" width="170" height="86" rx="12"/>
+  <text class="h" x="918" y="72">Next session</text>
+  <text class="s" x="918" y="95">starts with the answer,</text>
+  <text class="s" x="918" y="113">not the question</text>
+  <path class="a ga" d="M820 83 H898"/>
+  <path class="a ra" d="M985 288 V130" />
+
+  <text class="s" x="30" y="415">Everything stays on your machine, unless you point HINDSIGHT_EMBED_URL at a remote endpoint.</text>
+</svg>
