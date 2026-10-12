@@ -9,7 +9,7 @@ argument-hint: "[topic or project to focus on]"
 # Learn from corrections
 
 Goal: the user should never have to say the same thing twice. Fewer rules, and rules that hold, not a list that
-keeps growing. Focus for this pass: $ARGUMENTS
+keeps growing. Nothing is written before they agree: you propose, they decide. Focus for this pass: $ARGUMENTS
 
 ## Material (collected before you read this)
 
@@ -25,8 +25,10 @@ lessons, with quotes.
 
 - **Noise** (not a correction) or a **one-off tweak** ("move it 2px") -> nothing.
 - **Project lesson** -> that project's `CLAUDE.md` (or its memory when it is a fact more than an instruction).
-- **Global lesson**: seen in at least two projects or sessions, or stated as universal ("always", "whatever the
-  project") -> see the ladder below.
+- **Global lesson**: seen in **two different projects** (two distinct paths, on either machine), or stated as
+  universal ("always", "whatever the project", "every time"). Two corrections in the same project, even in two
+  sessions, are a project lesson: the digest shows `scope: same` for those and `scope: cross` for the ones that
+  travel. When in doubt, write it in the project; it can move up later, the reverse never happens.
 - **Ignored rule**: the correction is about a point already written somewhere (a memory marked "rule ignored",
   or one you find: for each retained correction run
   `python3 "${CLAUDE_PLUGIN_ROOT}/scripts/recall.py" "<the lesson in one sentence>" --type rule,memory -k 5`).
@@ -52,9 +54,11 @@ it helps. No shouting, no "CRITICAL": the reason does the work. Never copy a sec
 
 ## Finish
 
-1. Show the diff of what you wrote and remove anything that is not crisp.
-2. `python3 "${CLAUDE_PLUGIN_ROOT}/scripts/mine.py" done`
-3. Report in a few lines: each lesson kept (with their sentence), where it is written, what was reinforced or
+1. Propose, do not write. One line per lesson kept, with their sentence and where it would go; then the list of
+   what you dropped and why. Wait for their yes; on a partial yes, write only what they accepted.
+2. Write the accepted ones, show the diff, and remove anything that is not crisp.
+3. `python3 "${CLAUDE_PLUGIN_ROOT}/scripts/mine.py" done`
+4. Report in a few lines: each lesson kept (with their sentence), where it is written, what was reinforced or
    automated, what was ignored and why. Then the trend from
    `python3 "${CLAUDE_PLUGIN_ROOT}/scripts/mine.py" stats` (share of messages that correct Claude, per week).
    It is approximate: watch the direction, not the number.

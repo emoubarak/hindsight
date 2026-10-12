@@ -34,7 +34,7 @@ sessions) and indexes them.
 | Say "do you remember how we set up X?" | A hook searches your past sessions and memories and adds the top 3 hits to Claude's context. |
 | Ask Claude to use the `recall` skill, or Claude decides to | Claude writes its own query (subject, project, exact words), filters by type, project or date, and opens the right session. |
 | Correct Claude ("I told you not to...", "that's wrong") | A hook logs it (secrets redacted) and reminds Claude to save a `feedback` memory if it is a habit and not a one-off. |
-| Run `/hindsight:learn` | Claude reads the digest of your corrections, checks which ones were already rules, and writes or reinforces rules in the right place. Shows the diff. |
+| Run `/hindsight:learn` | Claude reads the digest of your corrections, checks which ones were already rules, and proposes each new rule with its destination (hook, skill, `CLAUDE.md`, memory). Nothing is written before you say yes. |
 | Start a session after a while | One line tells you if corrections are waiting for a digest. |
 
 Run the search yourself, too. The scripts live in the plugin cache (`~/.claude/plugins/cache/hindsight/hindsight/<version>/scripts/`,
@@ -62,7 +62,9 @@ python3 $H/mine.py stats                     # share of your messages that corre
 3. **Detect.** `signals.py` scores each prompt with a small list of correction patterns (strong ones count 2, weak ones 1,
    two or more is a correction). It is deliberately broad: a false positive costs one log line, a miss loses a lesson.
 4. **Digest.** `/hindsight:learn` reads corrections since the last pass, together with what Claude had just said, and
-   decides per item: noise, project lesson, or global lesson; then writes it where it will hold.
+   decides per item: noise, project lesson, or global lesson. A lesson only goes global when it shows up in two
+   different projects, or the user says it is universal; two corrections in the same project stay there. Claude
+   proposes each one with its destination and writes nothing until you agree.
 
 Every hook fails open: any error means silence, never a blocked prompt.
 

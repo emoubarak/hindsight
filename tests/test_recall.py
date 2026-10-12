@@ -211,6 +211,42 @@ class TestMine(Env):
         self.assertNotIn("hunter2", digest)
         self.assertEqual(self.run_py("scripts/mine.py", "pending").stdout.split()[0], "1")
 
+    def test_digest_scopes_two_sessions_of_one_project_as_same(self):
+        # a second session of the same project: the correction must not look global
+        write_session(self.projects, "eeee5555", [
+            user("I told you again not to add comments, that's wrong", "2026-09-03T09:00:00Z"),
+        ])
+        out = self.run_py("scripts/mine.py", "collect")
+        with open(out.stdout.strip().splitlines()[-1]) as fh:
+            digest = fh.read()
+        self.assertIn("scope: same", digest)
+        self.assertNotIn("scope: cross", digest)
+
+    def test_same_folder_without_cwd_is_one_project(self):
+        # the project label falls back to the folder name when a transcript has no cwd: it is still the same
+        # project, so the digest must not show it twice and the scope must not read as a first sighting
+        d = os.path.join(self.projects, "-tmp-demo-api")
+        with open(os.path.join(d, "gggg7777.jsonl"), "w") as fh:
+            fh.write(json.dumps({"type": "user", "timestamp": "2026-09-04T09:00:00Z",
+                                 "message": {"role": "user", "content": "I told you again not to add comments, wrong"}}) + "\n")
+        out = self.run_py("scripts/mine.py", "collect")
+        with open(out.stdout.strip().splitlines()[-1]) as fh:
+            digest = fh.read()
+        self.assertEqual(digest.count("### "), 1)
+        self.assertIn("scope: same", digest)
+
+    def test_digest_scopes_another_machine_as_cross(self):
+        other = os.path.join(self.home, "laptop", ".claude", "projects")
+        write_session(other, "ffff6666", [
+            user("I told you not to add comments, that's wrong", "2026-09-03T09:00:00Z"),
+        ])
+        self.env["HINDSIGHT_EXTRA_PROJECT_DIRS"] = other
+        out = self.run_py("scripts/mine.py", "collect")
+        with open(out.stdout.strip().splitlines()[-1]) as fh:
+            digest = fh.read()
+        self.assertIn("scope: cross", digest)
+        self.assertNotIn("scope: same", digest)
+
 
 class TestRobustness(Env):
     def test_odd_transcript_lines_do_not_stop_mining(self):
@@ -290,6 +326,13 @@ class TestHooks(Env):
         r = self.hook("learn_signal", {"prompt": "I told you not to touch the config, that's wrong", "cwd": "/x", "session_id": "s"})
         self.assertIn("[hindsight]", r.stdout)
         self.assertTrue(os.path.exists(os.path.join(self.env["HINDSIGHT_DATA"], "signals.jsonl")))
+
+    def test_learn_signal_proposes_instead_of_writing(self):
+        r = self.hook("learn_signal", {"prompt": "I told you not to touch the config, that's wrong", "cwd": "/x", "session_id": "s"})
+        ctx = json.loads(r.stdout)["hookSpecificOutput"]["additionalContext"]
+        self.assertIn("wait for a yes", ctx)
+        self.assertIn("never a global one", ctx)
+        self.assertNotIn("save it as a `feedback` memory", ctx)
 
     def test_learn_signal_silent_on_normal_prompt(self):
         self.assertEqual(self.hook("learn_signal", {"prompt": "add a footer please"}).stdout, "")

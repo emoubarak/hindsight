@@ -10,11 +10,11 @@ import _common  # noqa: F401,E402
 
 NUDGE = (
     "[hindsight] This message looks like a correction (approximate detection, ignore it if it is not one). "
-    "Fix the problem first. Then, only if it is a way of working that will come back (not a tweak to this task), "
-    "save it as a `feedback` memory for this project: first line \"scope: global\" or \"scope: project\", then the "
-    "expected behaviour and why. If an existing rule (CLAUDE.md, skill, memory) already covered this point, write "
-    "\"rule ignored: <where>\": it was not enough and /hindsight:learn will reinforce it. Do not edit the global "
-    "CLAUDE.md for this unless the user asks (\"remember this\", \"add it to your rules\")."
+    "Fix the problem first. If it is a way of working that will come back, do not write the rule yourself: "
+    "propose it, in one line, with where it would go (a `feedback` memory for this project, or a global rule), "
+    "and wait for a yes. One correction in one repo is a project rule, never a global one, however strongly it "
+    "is worded. If an existing rule (CLAUDE.md, skill, memory) already covered this point, say so: it was not "
+    "enough and /hindsight:learn will reinforce it."
 )
 
 

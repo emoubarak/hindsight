@@ -21,6 +21,7 @@ from signals import redact, score  # noqa: E402
 STATE = os.path.join(DATA, "state.json")        # transcripts already distilled (by size)
 MARK = os.path.join(DATA, "last_digest")        # when /learn last ran; kept apart so mining never overwrites it
 STARTED = os.path.join(DATA, ".digest_started")  # when the current digest was made: `done` marks that, not "now"
+FORMAT = 2                                      # corpus fields the digest needs; bump re-distills once (see cmd_mine)
 SYS = ("<task-notification", "<system-reminder", "<local-command-stdout", "<local-command-caveat", "Caveat:",
        "<bash-stdout", "<bash-stderr", "[Image", "Base directory for this skill")
 REJECT = re.compile(r"the user said:\s*(.*)", re.S)
@@ -32,8 +33,11 @@ def machine():
 
 def load_state():
     try:
-        files = json.load(open(STATE)).get("files", {})
+        raw = json.load(open(STATE))
     except Exception:
+        raw = {}
+    files = raw.get("files", {})
+    if raw.get("format") != FORMAT:     # a format bump retires the whole cache at once: every transcript is distilled again
         files = {}
     try:
         last = open(MARK).read().strip() or None
@@ -45,7 +49,7 @@ def load_state():
 def save_state(st):
     private_dir(DATA)
     tmp = f"{STATE}.{os.getpid()}.tmp"
-    json.dump({"files": st["files"]}, open(tmp, "w"), indent=1)
+    json.dump({"format": FORMAT, "files": st["files"]}, open(tmp, "w"), indent=1)
     os.replace(tmp, STATE)
 
 
@@ -186,7 +190,8 @@ def cmd_mine(quiet=False):
                     tmp = f"{out}.{os.getpid()}.tmp"      # atomic: recall may kill the miner mid-write
                     with open(tmp, "w") as w:
                         json.dump({"machine": mach, "project": proj, "title": meta["title"], "first": meta["first"],
-                                   "last": meta["last"], "events": ev}, w, ensure_ascii=False)
+                                   "last": meta["last"], "dir": os.path.dirname(f), "events": ev},
+                                  w, ensure_ascii=False)
                     os.replace(tmp, out)
                     n += 1
                 except Exception:       # one odd transcript must not stop the others
@@ -204,7 +209,13 @@ def cmd_mine(quiet=False):
 
 def corrections(since=None):
     """Yield (session, event, hits, claude_context) for every correction-looking event after `since`."""
-    for f in glob.glob(os.path.join(CORPUS, "*", "*.json")):
+    for _, s, e, hits, ctx in corrections_with_files(since):
+        yield s, e, hits, ctx
+
+
+def corrections_with_files(since=None):
+    """Same, plus the corpus file, for callers that need to group by project or scope."""
+    for f in sorted(glob.glob(os.path.join(CORPUS, "*", "*.json"))):
         s = json.load(open(f))
         ev = s["events"]
         for i, e in enumerate(ev):
@@ -219,7 +230,7 @@ def corrections(since=None):
             if sc < 2:
                 continue
             ctx = next((x[1] for x in reversed(ev[:i]) if x[0] == "A"), "")
-            yield s, e, hits, ctx
+            yield f, s, e, hits, ctx
 
 
 def memories_changed(since):
@@ -264,15 +275,36 @@ def weekly():
     return [(w, msgs[w], corr[w]) for w in sorted(msgs)]
 
 
+def project_key(s, proj):
+    """A project's identity is its transcripts folder, not its `cwd` label: the label is missing when a
+    transcript carries no cwd, so the same project would otherwise split in two. The folder name is the same
+    on your other machine for the same repo, which is what lets a lesson be called global."""
+    d = s.get("dir") or (s.get("roots") or {}).get("dir") or ""
+    return os.path.basename(d.rstrip("/")) or proj
+
+
+def scope_hint(key, s, seen):
+    """How wide a lesson drawn from this project can be. `outside`: first correction seen in it (or in any
+    session since the last digest). `same`: still this project, another session: keep it a project rule.
+    `cross`: the same project, reached from another machine: the lesson may travel."""
+    prev = seen.get(key)
+    seen[key] = s.get("machine", "")
+    if not prev:
+        return "outside"
+    return "same" if prev == s.get("machine", "") else "cross"
+
+
 def cmd_digest():
     st = load_state()
     since = st.get("last_digest")
     private_dir(os.path.join(DATA, "digests"))
     open(STARTED, "w").write(dt.datetime.now(dt.timezone.utc).isoformat())
     path = os.path.join(DATA, "digests", dt.date.today().isoformat() + ".md")
-    by_proj = collections.defaultdict(list)
-    for s, e, hits, ctx in corrections(since):
-        by_proj[s["project"]].append((s, e, hits, ctx))
+    by_proj, seen, scopes = collections.defaultdict(list), {}, {}
+    for f, s, e, hits, ctx in corrections_with_files(since):
+        key = project_key(s, s["project"])
+        by_proj[key].append((f, s, e, hits, ctx))
+        scopes[f] = scope_hint(key, s, seen)
     mems = memories_changed(since)
     with open(path, "w") as o:
         o.write(f"# Learning digest, since {since or 'the beginning'}\n\n")
@@ -280,12 +312,16 @@ def cmd_digest():
                 + " · ".join(f"{w[5:]} {100 * c // max(m, 1)}%" for w, m, c in weekly()[-10:]) + "\n\n")
         o.write(f"## 1. Detected corrections ({sum(map(len, by_proj.values()))})\n\n"
                 "Broad regex filter: expect noise. `A` is what Claude had just said. `R` is a tool call you "
-                "rejected, `X` an interruption.\n")
-        for proj, items in sorted(by_proj.items(), key=lambda kv: -len(kv[1])):
-            o.write(f"\n### {proj} ({len(items)})\n")
-            for s, e, hits, ctx in sorted(items, key=lambda x: x[1][2] or ""):
+                "rejected, `X` an interruption. `scope` says how wide a lesson from that item can be: `same` = "
+                "same project, another session (keep it a project rule), `cross` = the same project reached from "
+                "another machine (may go global), `outside` = first correction seen in this project since the "
+                "last digest (keep it a project rule).\n")
+        for _, items in sorted(by_proj.items(), key=lambda kv: -len(kv[1])):
+            o.write(f"\n### {items[0][1]['project']} ({len(items)})\n")
+            for f, s, e, hits, ctx in sorted(items, key=lambda x: x[2][2] or ""):
                 when = (e[2] or "")[:16].replace("T", " ")
-                o.write(f"\n- **{e[0]}** {when} · {s['machine']} · \"{s['title'][:50]}\" · {', '.join(hits[:3])}\n")
+                o.write(f"\n- **{e[0]}** {when} · {s['machine']} · \"{s['title'][:50]}\" · {', '.join(hits[:3])}"
+                        f" · scope: {scopes[f]}\n")
                 if ctx:
                     o.write(f"  - A: {ctx[-350:].replace(chr(10), ' ')}\n")
                 o.write(f"  - {e[0]}: {e[1][:900].replace(chr(10), ' ')}\n")
