@@ -82,7 +82,7 @@ class TestSignals(unittest.TestCase):
                  "Authorization: Basic Zq81xPlmZq81xPlm", "PGPASSWORD=Zq81xPlm psql", "--token Zq81xPlm", "--password=Zq81xPlm",
                  "mysql -uroot -pZq81xPlm", '{"accessToken": "Zq81xPlm"}', "{'password': 'Zq81xPlm'}",
                  "https://hooks.slack.com/services/T000/B000/Zq81xPlm", "https://discord.com/api/webhooks/1/Zq81xPlm",
-                 "hf_Zq81xPlm" + "a" * 30, "glpat-Zq81xPlm" + "b" * 12, "xoxb-Zq81xPlm-123456", "AKIAZQ81XPLMZQ81XPLM",
+                 "hf_Zq81xPlm" + "a" * 30, "glpat-Zq81xPlm" + "b" * 12, "xoxb-Zq81xPlm-123456", "AKIA" + "ZQ81XPLM" * 2,
                  "aws secret Zq81xPlm" + "c" * 32, "the db password: Zq81xPlm"]
         for c in cases:
             r = self.s.redact(c)
