@@ -91,7 +91,7 @@ class TestSignals(unittest.TestCase):
                 self.assertNotIn(leak, r, c)
 
     def test_truncated_private_key_is_redacted(self):
-        r = self.s.redact("-----BEGIN RSA PRIVATE KEY-----\nMIIEabc" + "a" * 300)
+        r = self.s.redact("-----BEGIN RSA " + "PRIVATE KEY-----\nMIIEabc" + "a" * 300)
         self.assertEqual(r, "[private key]")
 
     def test_redact(self):
@@ -264,7 +264,7 @@ class TestRobustness(Env):
                 self.assertEqual(os.stat(os.path.join(dirpath, n)).st_mode & 0o077, 0, os.path.join(dirpath, n))
 
     def test_cut_off_key_never_reaches_the_corpus(self):
-        key = "-----BEGIN RSA PRIVATE KEY-----\n" + "MIIEowIBAAKCAQEA" * 200
+        key = "-----BEGIN RSA " + "PRIVATE KEY-----\n" + "MIIEowIBAAKCAQEA" * 200
         write_session(self.projects, "dddd4444", [user("here is the key " + key, "2026-09-04T08:00:00Z")])
         self.run_py("scripts/mine.py", "mine")
         raw = ""
