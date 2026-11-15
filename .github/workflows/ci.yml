@@ -2,7 +2,7 @@ name: ci
 on: [push, pull_request]
 jobs:
   test:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04  # ubuntu-latest became 26.04 (October 2026): setup-python has no 3.9 build for it
     strategy:
       matrix:
         python: ["3.9", "3.12"]
