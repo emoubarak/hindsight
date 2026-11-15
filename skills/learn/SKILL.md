@@ -2,7 +2,7 @@
 name: learn
 description: Digest the user's corrections collected from their Claude Code sessions and turn them into durable rules in the right place, reinforcing the ones that did not hold. Run with /hindsight:learn.
 disable-model-invocation: true
-allowed-tools: Bash(python3 "${CLAUDE_PLUGIN_ROOT}/scripts/mine.py" *), Bash(python3 "${CLAUDE_PLUGIN_ROOT}/scripts/recall.py" *), Read, Grep
+allowed-tools: Bash(python3 "${CLAUDE_PLUGIN_ROOT}/scripts/mine.py" *), Bash(python3 "${CLAUDE_PLUGIN_ROOT}/scripts/freshness.py" *), Bash(python3 "${CLAUDE_PLUGIN_ROOT}/scripts/recall.py" *), Read, Grep
 argument-hint: "[topic or project to focus on]"
 ---
 
@@ -62,3 +62,5 @@ it helps. No shouting, no "CRITICAL": the reason does the work. Never copy a sec
    automated, what was ignored and why. Then the trend from
    `python3 "${CLAUDE_PLUGIN_ROOT}/scripts/mine.py" stats` (share of messages that correct Claude, per week).
    It is approximate: watch the direction, not the number.
+5. Then offer `/hindsight:refresh` if `python3 "${CLAUDE_PLUGIN_ROOT}/scripts/freshness.py" short` lists skills to
+   check.

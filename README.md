@@ -1,8 +1,8 @@
 <p align="center"><img src="docs/banner.svg" alt="Hindsight: memory for Claude Code" width="100%"></p>
 
-**Hindsight gives Claude Code a memory of everything you already told it, and turns the things you keep correcting into rules it follows.**
+**Hindsight gives Claude Code a memory of everything you already told it, turns the things you keep correcting into rules it follows, and keeps the skills you rely on up to date.**
 
-Two problems, one plugin:
+Three problems, one plugin:
 
 - **"Do you remember how we did this?"** Claude starts every session blank. Hindsight indexes your past sessions
   (user messages, Claude's replies, project memories, rules) and answers that question: a hook runs the search
@@ -11,6 +11,10 @@ Two problems, one plugin:
   logs them, and `/hindsight:learn` digests them into the narrowest place that works: a hook, a skill,
   `CLAUDE.md`, or a project memory. A rule that was already written and still got ignored is flagged, because that
   is the one that needs to be made automatic.
+- **"That model was retired two months ago."** A skill freezes a state of the world: model names, prices, a
+  platform's rules, a tool's flags. `/hindsight:refresh` takes the skills you actually used since their last check,
+  looks for what changed (changelogs, docs, Reddit, X) and for new commits in the repository a skill was copied
+  from, and proposes the edits. Only mature news counts, and nothing is written before you say yes.
 
 <p align="center"><img src="docs/demo.svg" alt="A hook answers 'do you remember how we deploy to staging?' from a past session" width="86%"></p>
 
@@ -35,6 +39,7 @@ sessions) and indexes them.
 | Ask Claude to use the `recall` skill, or Claude decides to | Claude writes its own query (subject, project, exact words), filters by type, project or date, and opens the right session. |
 | Correct Claude ("I told you not to...", "that's wrong") | A hook logs it (secrets redacted) and reminds Claude to save a `feedback` memory if it is a habit and not a one-off. |
 | Run `/hindsight:learn` | Claude reads the digest of your corrections, checks which ones were already rules, and proposes each new rule with its destination (hook, skill, `CLAUDE.md`, memory). Nothing is written before you say yes. |
+| Run `/hindsight:refresh` | The skills you used since their last check are compared with what came out since: one sub-agent per skill reads changelogs and docs first, then Reddit and X; copied skills are compared with their source repository. Each finding comes with its official link and the edit; nothing is written before you say yes. |
 | Start a session after a while | One line tells you if corrections are waiting for a digest. |
 
 Run the search yourself, too. The scripts live in the plugin cache (`~/.claude/plugins/cache/hindsight/hindsight/<version>/scripts/`,
@@ -46,6 +51,9 @@ python3 $H/recall.py "staging deploy password" --type msg,memory
 python3 $H/recall.py "how did we handle rate limits" --project api --before 2026-09-01
 python3 $H/recall.py --session 3f2a9c1e      # one session in full
 python3 $H/mine.py stats                     # share of your messages that correct Claude, per week
+python3 $H/freshness.py init                 # cards file: what to watch in each skill, and where
+python3 $H/freshness.py due                  # skills used since their last check, whose interval has passed
+python3 $H/freshness.py upstream             # copied skills whose source moved (needs the GitHub CLI, `gh`)
 ```
 
 ## How it works
@@ -65,6 +73,12 @@ python3 $H/mine.py stats                     # share of your messages that corre
    decides per item: noise, project lesson, or global lesson. A lesson only goes global when it shows up in two
    different projects, or the user says it is universal; two corrections in the same project stay there. Claude
    proposes each one with its destination and writes nothing until you agree.
+5. **Refresh.** `scripts/freshness.py` reads which skills each session used (Skill tool calls, `/skill` commands,
+   scripts of `~/.claude/skills/<name>/` run from Bash; reading a skill's file does not count) and keeps one card
+   per skill in your data directory: what can go stale, where to look, how often, when it was last checked. A skill
+   is due once it was used after its last check and its interval has passed; at most 8 per pass, the rest stay due.
+   `/hindsight:refresh` checks them in parallel and sorts each finding: mature (out for three weeks or announced
+   stable, two independent sources including the official one), worth watching, or nothing.
 
 Every hook fails open: any error means silence, never a blocked prompt.
 
@@ -100,6 +114,7 @@ says so; documents without a vector are retried on the next search. Changing the
 | `HINDSIGHT_EXTRA_PROJECT_DIRS` | unset | Colon-separated extra `projects` directories (e.g. another machine's `~/.claude/projects`, synced). |
 | `HINDSIGHT_DATA` | `~/.local/share/hindsight` | Where the corpus, index and signals live (one directory, mode 700, whichever process asks). |
 | `HINDSIGHT_QUERY_TIMEOUT` | `6` | Seconds to wait for the embeddings endpoint when searching. |
+| `HINDSIGHT_FRESHNESS` | `<data dir>/freshness.md` | The skill cards used by `/hindsight:refresh` (`freshness.py init` writes them). |
 
 ## Privacy
 
@@ -121,6 +136,11 @@ embeddings endpoint are redacted too. The test suite checks each of these forms.
 - Search quality with keywords alone depends on you using the same words. The recall skill tells Claude to
   reformulate for that reason; semantic search helps further.
 - Transcripts of sessions run through the SDK or `claude -p` are skipped on purpose.
+- `/hindsight:refresh` counts a skill as used when it is loaded, typed as `/skill`, or when one of its scripts is
+  run with its path in command position; a script run as `cd <skill dir> && python3 run.py`, or only inside a
+  sub-agent, is not counted.
+- `/hindsight:refresh` reads Reddit and X only if Claude has a browser tool that can open them; without one it says
+  what it could not reach and works from official sources. Comparing copied skills needs `gh`, logged in.
 
 ## Related work
 
