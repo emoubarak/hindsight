@@ -28,17 +28,26 @@ CORRECTION = {
     },
     "fr": {
         "strong": [
-            r"\bj(?:e )?t'?(?:ai|é) (?:dit|dis|demand[ée])", r"\bj'?(?:ai|é) (?:dit|dis|demand[ée])\b",
-            r"\bon avait dit\b", r"\bcomme (?:je|j)(?:e)? ?(?:t'?ai|l'?ai) dit", r"\b(?:toujours|tjr?s?) pas\b",
-            r"\bencore (?:une fois|pas|trop)\b", r"\b(?:\d+|deuxi[eè]me|troisi[eè]me)e? fois\b",
-            r"\bc'?(?:est)? ?pas (?:[çc]a|bon|ce que)\b", r"\bc'est faux\b", r"\bn'importe quoi\b",
-            r"\btu (?:m'as )?menti\b|\btu inventes?\b", r"\bt'as rien compris\b|\bta pas compris\b",
-            r"\b(?:pourquoi|pk|pq) (?:tu|t'as|ta)\b", r"\bt'?(?:as|a) (?:pas|oubli[ée])\b",
-            r"\barr[eê]te (?:de|d'|avec)\b", r"\bj'?(?:ai|é) pas demand[ée]\b", r"\bfais gaffe\b",
+            r"\bj(?:e )?t'?(?:ai|é) (?:dit|dis|demand[ée])",           # je t'ai dit / jtai dis
+            r"\bj'?(?:ai|é) (?:dit|dis|demand[ée])\b",
+            r"\bon avait dit\b", r"\bcomme (?:je|j)(?:e)? ?(?:t'?ai|l'?ai) dit",
+            r"\b(?:toujours|tjr?s?) pas\b", r"\bencore (?:une fois|en |pas|trop|des?)\b",
+            r"\b(?:\d+|deuxi[eè]me|troisi[eè]me|dixi[eè]me|quinzi[eè]me|[eé]ni[eè]me)e? fois\b",
+            r"\bc'?(?:est)? ?pas (?:[çc]a|bon|ce que)\b", r"\bc (?:faux|pas bon|nul)\b", r"\bc'est faux\b",
+            r"\bn'importe quoi\b", r"\bslop\b", r"\bmensonge\b|\btu (?:m'as )?menti?s?\b|\btu inventes?\b|\binvent[ée] des?\b",
+            r"\bj'y comprends? (?:plus )?rien\b|\btu me perds?\b|\bt'as rien compris\b|\bta pas compris\b",
+            r"\b(?:pourquoi|pk|pq|pkoi) (?:tu|t'as|ta|t'es)\b",
+            r"\bt'?(?:as|a) (?:pas|oubli[ée]|rien)\b", r"\btu as (?:pas|oubli[ée])\b", r"\bt'es pas all[ée]\b",
+            r"\barr[eê]te (?:de|d'|avec|toi)\b", r"\bj'?(?:ai|é) pas demand[ée]\b", r"\bj(?:e )?(?:veux|veu) pas\b",
+            r"\bje te l'ai d[ée]j[àa]\b", r"\bfait gaffe\b|\bfais gaffe\b",
+            r"\bmoche\b|\bcheap\b|\bd[ée]gueu\b", r"\bpas fid[eè]le\b",
         ],
         "weak": [
-            r"^(?:non|nan)\b", r"\bfaux\b", r"\btrop (?:long|charg[ée]|compliqu[ée]|gros|petit)\b",
-            r"\bplus (?:simple|court)\b", r"\bne (?:marche|fonctionne) pas\b", r"\bt'es s[uû]r\b",
+            r"^(?:non|nan|nope|no)\b", r"\bstop\b", r"\brelis\b", r"\bfaux\b", r"\bnul(?:le)?\b",
+            r"\btu (?:peux|pourrais) pas\b", r"\btu ne peux pas\b", r"\bplus (?:simple|court|subtil)",
+            r"\btrop (?:long|de texte|charg[ée]|compliqu[ée]|gros|petit)\b", r"\bmanque\b", r"\bbug(?:ue)?\b",
+            r"\bt'es s[uû]r\b", r"\btej\b", r"\bsans int[ée]r[eê]t\b", r"\bon s'en fout\b",
+            r"\bc(?:a|ç)a? (?:marche|fonctionne) (?:pas|toujours pas)\b", r"\bne (?:marche|fonctionne) pas\b",
         ],
     },
 }
@@ -52,9 +61,11 @@ RECALL = {
         r"\bwhat did we (?:do|decide|say|use)\b", r"\bfind (?:the|that) (?:session|conversation|chat)\b",
     ],
     "fr": [
-        r"tu te souviens", r"souviens[- ]toi", r"rappelle[- ]toi", r"on en (?:était|etait) o[uù]",
-        r"comme (?:la dernière fois|l'autre fois)", r"l'autre (?:session|conv)", r"on avait (?:dit|fait|vu|décidé)",
-        r"je t'?(?:ai|avais) (?:donn|envoy|mis|dit)",
+        r"tu te souviens", r"souviens[- ]toi", r"rappelle[- ]toi", r"je t[' ’]?ai (?:donn|envoy|mis|file|pass)",
+        r"je t[' ’]?avais", r"j[' ’]?t[' ’]?avais", r"\bt[' ’]?avais (?:donn|envoy|mis|cr|fait|trouv|lanc|dit)",
+        r"on en (?:était|etait) o[uù]", r"on (?:s[' ’]?)?(?:était|etait) arr[eê]t", r"on avait (?:dit|fait|vu|parl|décid|mis|lanc|trouv|cr)",
+        r"comme (?:la dernière fois|l[' ’]?autre fois)", r"l[' ’]?autre (?:session|conv)", r"(?:dans|de) (?:la|une) (?:session|conv) d[' ’]?avant",
+        r"tu avais (?:fait|dit|trouvé)", r"déjà donné", r"retrouve[rs]? (?:la|le|les|ma|mon|mes) (?:session|conv|discussion|mdp|mot de passe)",
     ],
 }
 
