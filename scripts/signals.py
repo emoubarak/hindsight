@@ -130,9 +130,30 @@ _SECRETS = [
 ]
 
 
+_TOKEN = re.compile(r"[^\s,;'\"`()\[\]<>]{6,}")
+_HASHES = None
+
+
+def _known():
+    """SHA-256 of secrets you declared (one hash per line in $HINDSIGHT_CONFIG/secret-hashes, see `mine.py secret`):
+    the value itself is never stored, yet every occurrence is erased from what gets archived."""
+    global _HASHES
+    if _HASHES is None:
+        from paths import CONFIG
+        try:
+            _HASHES = {l.strip() for l in open(os.path.join(CONFIG, "secret-hashes")) if l.strip()}
+        except OSError:
+            _HASHES = set()
+    return _HASHES
+
+
 def redact(text):
     """What gets archived must not keep the passwords and tokens pasted in chat. Always redact BEFORE truncating:
     a cut-off key or token would otherwise slip past the patterns."""
     for rx, sub in _SECRETS:
         text = rx.sub(sub, text)
+    if _known():
+        import hashlib
+        text = _TOKEN.sub(lambda m: "[secret]" if hashlib.sha256(m.group(0).encode()).hexdigest() in _HASHES
+                          else m.group(0), text)
     return text

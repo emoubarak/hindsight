@@ -8,14 +8,18 @@
   mine.py collect  mine + digest (what the learn skill runs)
   mine.py done     mark everything up to now as digested
   mine.py stats    share of your messages that correct Claude, per week (is it working?)
+  mine.py pull     rsync the transcripts and memories of other machines listed in $HINDSIGHT_CONFIG/peers
+                   ("name user@host" per line) into the data directory; `collect` runs it first
+  mine.py secret   read a secret on stdin and store its SHA-256 in $HINDSIGHT_CONFIG/secret-hashes: every
+                   occurrence is erased from the corpus on the next re-mine (rm -rf corpus; mine.py mine)
   mine.py pending  "<corrections> <feedback memories>" waiting since the last digest
 
 Data: see paths.py. Secrets are redacted before anything is written.
 """
-import collections, datetime as dt, glob, hashlib, json, os, re, socket, sys
+import collections, datetime as dt, glob, hashlib, json, os, re, socket, subprocess, sys
 
 sys.path.insert(0, os.path.dirname(os.path.realpath(__file__)))
-from paths import CORPUS, DATA, HOME, private_dir, project_dirs  # noqa: E402
+from paths import CONFIG, CORPUS, DATA, HOME, PEERS, private_dir, project_dirs  # noqa: E402
 from signals import redact, score  # noqa: E402
 
 STATE = os.path.join(DATA, "state.json")        # transcripts already distilled (by size)
@@ -340,10 +344,61 @@ def cmd_digest():
                     continue
                 if not since or j["ts"] >= since:
                     o.write(f"- {j['ts'][:16]} · {j['cwd'].replace(HOME, '~')} : {j['prompt'][:300]}\n")
+        for chunk in digest_extensions(since):
+            o.write("\n" + chunk)
     print(path)
 
 
+def peers():
+    p = os.path.join(CONFIG, "peers")
+    if not os.path.exists(p):
+        return []
+    return [l.split() for l in open(p) if len(l.split()) == 2 and not l.startswith("#")]
+
+
+def cmd_pull():
+    """Copy the sessions and project memories of every other machine (name host) so one search and one digest
+    cover them all. Unreachable machines are reported, never fatal."""
+    ssh = "ssh -o BatchMode=yes -o ConnectTimeout=6"
+    for name, host in peers():
+        dst = os.path.join(PEERS, name) + "/"
+        private_dir(dst)
+        r = subprocess.run(["rsync", "-a", "--delete", "--timeout=20", "-e", ssh, "--include=*/",
+                            "--include=projects/*/*.jsonl", "--include=projects/*/memory/**", "--exclude=*",
+                            "--prune-empty-dirs", f"{host}:.claude/", dst], capture_output=True, text=True)
+        print(f"{name}: {'ok' if r.returncode == 0 else 'unreachable (' + r.stderr.strip()[:80] + ')'}")
+
+
+def cmd_secret():
+    import getpass, hashlib
+    v = sys.stdin.readline().strip() if not sys.stdin.isatty() else getpass.getpass("secret to erase: ")
+    private_dir(CONFIG)
+    p = os.path.join(CONFIG, "secret-hashes")
+    with open(p, "a") as f:
+        f.write(hashlib.sha256(v.encode()).hexdigest() + "\n")
+    os.chmod(p, 0o600)
+    print("hash stored; now: rm -rf", CORPUS, "&& mine.py mine")
+
+
+def digest_extensions(since):
+    """Your own digest sections: every executable in $HINDSIGHT_CONFIG/digest.d/ is run (sorted by name, 3 min each)
+    with HINDSIGHT_SINCE set to the previous digest's date; what it prints is appended as-is. Use it for what only
+    your setup knows (usage of your skills, a registry, another tool's log). A failing extension adds one line."""
+    out = []
+    for f in sorted(glob.glob(os.path.join(CONFIG, "digest.d", "*"))):
+        if not os.access(f, os.X_OK) or os.path.isdir(f):
+            continue
+        try:
+            r = subprocess.run([f], capture_output=True, text=True, timeout=180,
+                               env={**os.environ, "HINDSIGHT_SINCE": since or "", "HINDSIGHT_DATA": DATA})
+            out.append(r.stdout if r.returncode == 0 else f"{os.path.basename(f)} failed: {r.stderr.strip()[-300:]}\n")
+        except (OSError, subprocess.TimeoutExpired) as ex:
+            out.append(f"{os.path.basename(f)} failed ({ex}).\n")
+    return out
+
+
 def cmd_collect():
+    cmd_pull()
     cmd_mine()
     cmd_digest()
 
@@ -375,7 +430,7 @@ def cmd_stats():
 if __name__ == "__main__":
     cmd = sys.argv[1] if len(sys.argv) > 1 else "stats"
     cmds = {"mine": cmd_mine, "digest": cmd_digest, "done": cmd_done, "stats": cmd_stats,
-            "collect": cmd_collect, "pending": cmd_pending}
+            "collect": cmd_collect, "pending": cmd_pending, "pull": cmd_pull, "secret": cmd_secret}
     if cmd not in cmds:
         sys.exit(__doc__)
     if cmd in ("mine", "collect"):

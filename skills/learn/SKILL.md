@@ -21,6 +21,14 @@ interruptions (`X`); (2) project memories written since; (3) signals captured li
 broad: expect noise. If the digest is over ~150 KB, have sub-agents triage it per project and return only the
 lessons, with quotes.
 
+## Your own policy (optional)
+
+!`f="${HINDSIGHT_CONFIG:-$HOME/.config/hindsight}/policy.md"; [ -f "$f" ] && cat "$f" || echo "(no policy file: defaults apply)"`
+
+If a policy is shown above, it comes from the user and wins over the defaults below wherever they differ: language
+of the rules, where each kind of lesson goes, size budgets, an unattended `auto` mode, extra steps to finish. The
+digest may also carry extra sections added by the user's `digest.d` extensions: treat them like the others.
+
 ## Triage each item
 
 - **Noise** (not a correction) or a **one-off tweak** ("move it 2px") -> nothing.
