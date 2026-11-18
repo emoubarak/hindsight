@@ -13,8 +13,9 @@ NUDGE = (
     "Fix the problem first. If it is a way of working that will come back, do not write the rule yourself: "
     "propose it, in one line, with where it would go (a `feedback` memory for this project, or a global rule), "
     "and wait for a yes. One correction in one repo is a project rule, never a global one, however strongly it "
-    "is worded. If an existing rule (CLAUDE.md, skill, memory) already covered this point, say so: it was not "
-    "enough and /hindsight:learn will reinforce it."
+    "is worded. If an existing rule (CLAUDE.md, skill, memory) already covered this point, write "
+    "\"rule ignored: <where it is written>\" in the proposal and in the memory: it was not enough and "
+    "/hindsight:learn will reinforce it."
 )
 
 
