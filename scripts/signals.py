@@ -31,7 +31,7 @@ CORRECTION = {
             r"\bj(?:e )?t'?(?:ai|é) (?:dit|dis|demand[ée])",           # je t'ai dit / jtai dis
             r"\bj'?(?:ai|é) (?:dit|dis|demand[ée])\b",
             r"\bon avait dit\b", r"\bcomme (?:je|j)(?:e)? ?(?:t'?ai|l'?ai) dit",
-            r"\b(?:toujours|tjr?s?) pas\b", r"\bencore (?:une fois|en |pas|trop|des?)\b",
+            r"\b(?:toujours|tjr?s?) pas\b", r"\bencore (?:une fois|en |pas|trop|des?)\b", r"\bencore (?:l'|le\b)",
             r"\b(?:\d+|deuxi[eè]me|troisi[eè]me|dixi[eè]me|quinzi[eè]me|[eé]ni[eè]me)e? fois\b",
             r"\bc'?(?:est)? ?pas (?:[çc]a|bon|ce que)\b", r"\bc (?:faux|pas bon|nul)\b", r"\bc'est faux\b",
             r"\bn'importe quoi\b", r"\bslop\b", r"\bmensonge\b|\btu (?:m'as )?menti?s?\b|\btu inventes?\b|\binvent[ée] des?\b",
@@ -47,7 +47,7 @@ CORRECTION = {
             r"\btu (?:peux|pourrais) pas\b", r"\btu ne peux pas\b", r"\bplus (?:simple|court|subtil)",
             r"\btrop (?:long|de texte|charg[ée]|compliqu[ée]|gros|petit)\b", r"\bmanque\b", r"\bbug(?:ue)?\b",
             r"\bt'es s[uû]r\b", r"\btej\b", r"\bsans int[ée]r[eê]t\b", r"\bon s'en fout\b",
-            r"\bc(?:a|ç)a? (?:marche|fonctionne) (?:pas|toujours pas)\b", r"\bne (?:marche|fonctionne) pas\b",
+            r"\bc(?:a|ç)a? (?:marche|fonctionne) (?:pas|toujours pas)\b", r"\bne (?:marche|fonctionne) pas\b", r"\b(?:marche|fonctionne) pas\b",
         ],
     },
 }
@@ -69,7 +69,9 @@ RECALL = {
     ],
 }
 
-NOISE = ("<task-notification", "<system-reminder", "<local-command", "<command-name>/clear")
+NOISE = ("<task-notification", "<system-reminder", "<local-command", "<command-name>/clear", "Caveat:")
+# a message that opens with a tag (<pasted_content>, <agent-message>…) is pasted or relayed text, not the user speaking
+_TAGGED = re.compile(r"\s*<[a-z][\w-]*[ >]")
 
 
 def langs():
@@ -86,7 +88,7 @@ def _compiled(table, key=None):
 
 def score(text):
     """2 per strong marker, 1 per weak one; >= 2 is treated as a correction."""
-    if not text or text.lstrip().startswith(NOISE):
+    if not text or text.lstrip().startswith(NOISE) or _TAGGED.match(text):
         return 0, []
     head = text[:1500]
     strong = [m.group(0) for r in _compiled(CORRECTION, "strong") if (m := r.search(head))]

@@ -1,6 +1,6 @@
 {
   "name": "hindsight",
-  "version": "0.3.3",
+  "version": "0.3.4",
   "description": "Memory for Claude Code: search every past session by meaning, turn your corrections into durable rules, and keep your skills up to date.",
   "author": {"name": "El Mahdi Moubarak", "url": "https://github.com/emoubarak"},
   "homepage": "https://github.com/emoubarak/hindsight",
