@@ -58,6 +58,15 @@ class Config(unittest.TestCase):
         self.assertIn("20-bad failed: boom", body)
         self.assertNotIn("ignored", body)
 
+    def test_custom_nudge_replaces_the_default(self):
+        hook = os.path.join(ROOT, "hooks", "learn_signal.py")
+        stdin = json.dumps({"prompt": "I told you not to do that, it's wrong", "cwd": "/tmp/x", "session_id": "s"})
+        run = lambda: subprocess.run([PY, hook], input=stdin, capture_output=True, text=True, env=self.env, timeout=30)
+        self.assertIn("propose it", run().stdout)
+        with open(os.path.join(self.cfg, "nudge.txt"), "w") as f:
+            f.write("Write the memory yourself.\n")
+        self.assertIn("Write the memory yourself.", run().stdout)
+
     def test_pull_reports_unreachable_machine_without_failing(self):
         open(os.path.join(self.cfg, "peers"), "w").write("# comment\nlaptop nobody@127.0.0.1.invalid\n")
         r = self.mine("pull")

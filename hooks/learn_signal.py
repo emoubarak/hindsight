@@ -18,6 +18,17 @@ NUDGE = (
 )
 
 
+def nudge():
+    """Your own reminder, if you wrote one ($HINDSIGHT_CONFIG/nudge.txt): another language, or "write the memory
+    yourself" instead of "propose it"."""
+    from paths import CONFIG
+    try:
+        text = open(os.path.join(CONFIG, "nudge.txt"), encoding="utf-8").read().strip()
+    except OSError:
+        return NUDGE
+    return text or NUDGE
+
+
 def main():
     try:
         d = json.load(sys.stdin)
@@ -35,7 +46,7 @@ def main():
         f.write(json.dumps({"ts": dt.datetime.now(dt.timezone.utc).isoformat(), "cwd": d.get("cwd", ""),
                             "session": d.get("session_id", ""), "hits": [redact(h) for h in hits[:4]], "prompt": redact(prompt)[:1500]},
                            ensure_ascii=False) + "\n")
-    print(json.dumps({"hookSpecificOutput": {"hookEventName": "UserPromptSubmit", "additionalContext": NUDGE}},
+    print(json.dumps({"hookSpecificOutput": {"hookEventName": "UserPromptSubmit", "additionalContext": nudge()}},
                      ensure_ascii=False))
 
 
