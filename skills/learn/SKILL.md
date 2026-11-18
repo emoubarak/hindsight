@@ -23,7 +23,7 @@ lessons, with quotes.
 
 ## Your own policy (optional)
 
-!`f="${HINDSIGHT_CONFIG:-$HOME/.config/hindsight}/policy.md"; [ -f "$f" ] && cat "$f" || echo "(no policy file: defaults apply)"`
+!`python3 "${CLAUDE_PLUGIN_ROOT}/scripts/mine.py" policy`
 
 If a policy is shown above, it comes from the user and wins over the defaults below wherever they differ: language
 of the rules, where each kind of lesson goes, size budgets, an unattended `auto` mode, extra steps to finish. The

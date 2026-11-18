@@ -24,7 +24,7 @@ def nudge():
     from paths import CONFIG
     try:
         text = open(os.path.join(CONFIG, "nudge.txt"), encoding="utf-8").read().strip()
-    except OSError:
+    except (OSError, ValueError):
         return NUDGE
     return text or NUDGE
 

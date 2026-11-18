@@ -136,6 +136,11 @@ _SECRETS = [
     (re.compile(r"\beyJ[\w-]{10,}\.[\w-]{10,}\.[\w-]{10,}"), "[secret]"),
     # a key cut off by truncation still has no END line: take everything to the end of the text
     (re.compile(r"-----BEGIN [A-Z ]*PRIVATE KEY-----[\s\S]*?(?:-----END [A-Z ]*PRIVATE KEY-----|\Z)"), "[private key]"),
+    # "uuid:hex" keys (e.g. an exchange API key and its secret)
+    (re.compile(r"\b[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}:[0-9a-f]{16,}\b", re.I), "[secret]"),
+    # "clé api c'est X", "token est X", "client_secret = X", "api key: X"
+    (re.compile(r"(?i)\b(cl[eé]f?s?(?:\s+(?:api|priv[ée]e?))?|api[ _-]?key|token|secret|client_secret)"
+                r"(\s*(?:c'est|c est|c|est|is|:|=)\s*)([^\s,;\[]{8,})"), r"\1\2[secret]"),
     (re.compile(r"\b[0-9a-fA-F]{32,}\b"), "[secret?]"),
     (re.compile(r"(?<![/\w.-])[A-Za-z0-9_\-]{40,}(?![/\w.-])"), "[secret?]"),
 ]

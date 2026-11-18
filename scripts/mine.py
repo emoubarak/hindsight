@@ -10,8 +10,9 @@
   mine.py stats    share of your messages that correct Claude, per week (is it working?)
   mine.py pull     rsync the transcripts and memories of other machines listed in $HINDSIGHT_CONFIG/peers
                    ("name user@host" per line) into the data directory; `collect` runs it first
-  mine.py secret   read a secret on stdin and store its SHA-256 in $HINDSIGHT_CONFIG/secret-hashes: every
-                   occurrence is erased from the corpus on the next re-mine (rm -rf corpus; mine.py mine)
+  mine.py secret   read a secret on stdin, store its SHA-256 in $HINDSIGHT_CONFIG/secret-hashes and erase every
+                   occurrence from the corpus in place (sessions rebuilt from older sources stay intact)
+  mine.py policy   print $HINDSIGHT_CONFIG/policy.md (what /hindsight:learn reads)
   mine.py pending  "<corrections> <feedback memories>" waiting since the last digest
 
 Data: see paths.py. Secrets are redacted before anything is written.
@@ -334,16 +335,19 @@ def cmd_digest():
                 "then the project copy is removed.\n")
         for kind, mach, proj, f, body in mems:
             o.write(f"\n### [{kind}] {mach} · {proj} · {os.path.basename(f)}\n`{f.replace(HOME, '~')}`\n\n{redact(body.strip())[:1800]}\n")
-        sig = os.path.join(DATA, "signals.jsonl")
-        if os.path.exists(sig):
+        sigs = [(machine(), os.path.join(DATA, "signals.jsonl"))] + [
+            (os.path.basename(os.path.dirname(f)), f) for f in sorted(glob.glob(os.path.join(PEERS, "*", "signals.jsonl")))]
+        sigs = [(m, f) for m, f in sigs if os.path.exists(f)]
+        if sigs:
             o.write("\n## 3. Live signals (hook) not yet digested\n\n")
-            for l in open(sig):
-                try:
-                    j = json.loads(l)
-                except Exception:
-                    continue
-                if not since or j["ts"] >= since:
-                    o.write(f"- {j['ts'][:16]} · {j['cwd'].replace(HOME, '~')} : {j['prompt'][:300]}\n")
+            for mach, sig in sigs:
+                for l in open(sig):
+                    try:
+                        j = json.loads(l)
+                    except Exception:
+                        continue
+                    if not since or j["ts"] >= since:
+                        o.write(f"- {j['ts'][:16]} · {mach} · {j['cwd'].replace(HOME, '~')} : {j['prompt'][:300]}\n")
         for chunk in digest_extensions(since):
             o.write("\n" + chunk)
     print(path)
@@ -366,6 +370,10 @@ def cmd_pull():
         r = subprocess.run(["rsync", "-a", "--delete", "--timeout=20", "-e", ssh, "--include=*/",
                             "--include=projects/*/*.jsonl", "--include=projects/*/memory/**", "--exclude=*",
                             "--prune-empty-dirs", f"{host}:.claude/", dst], capture_output=True, text=True)
+        if r.returncode == 0:   # the other machine's live correction signals feed section 3 of the digest
+            subprocess.run(["rsync", "-a", "--timeout=20", "-e", ssh,
+                            f"{host}:.local/share/hindsight/signals.jsonl", dst + "signals.jsonl"],
+                           capture_output=True, text=True)
         print(f"{name}: {'ok' if r.returncode == 0 else 'unreachable (' + r.stderr.strip()[:80] + ')'}")
 
 
@@ -377,7 +385,31 @@ def cmd_secret():
     with open(p, "a") as f:
         f.write(hashlib.sha256(v.encode()).hexdigest() + "\n")
     os.chmod(p, 0o600)
-    print("hash stored; now: rm -rf", CORPUS, "&& mine.py mine")
+    import signals
+    signals._HASHES = None          # reread the file we just appended to
+    changed = 0
+    for f in glob.glob(os.path.join(CORPUS, "*", "*.json")):
+        try:
+            s = json.load(open(f))
+        except (OSError, ValueError):
+            continue
+        before = json.dumps(s, ensure_ascii=False)
+        s["title"] = redact(s.get("title") or "")
+        s["events"] = [[*e[:1], redact(e[1]), *e[2:]] if len(e) > 1 and isinstance(e[1], str) else e
+                       for e in s.get("events", [])]
+        if json.dumps(s, ensure_ascii=False) != before:
+            json.dump(s, open(f + ".tmp", "w"), ensure_ascii=False)
+            os.replace(f + ".tmp", f)
+            changed += 1
+    print(f"hash stored; {changed} corpus file(s) scrubbed; the search index refreshes on its own")
+
+
+def cmd_policy():
+    p = os.path.join(CONFIG, "policy.md")
+    try:
+        print(open(p, encoding="utf-8").read())
+    except OSError:
+        print("(no policy file: defaults apply)")
 
 
 def digest_extensions(since):
@@ -430,7 +462,7 @@ def cmd_stats():
 if __name__ == "__main__":
     cmd = sys.argv[1] if len(sys.argv) > 1 else "stats"
     cmds = {"mine": cmd_mine, "digest": cmd_digest, "done": cmd_done, "stats": cmd_stats,
-            "collect": cmd_collect, "pending": cmd_pending, "pull": cmd_pull, "secret": cmd_secret}
+            "collect": cmd_collect, "pending": cmd_pending, "pull": cmd_pull, "secret": cmd_secret, "policy": cmd_policy}
     if cmd not in cmds:
         sys.exit(__doc__)
     if cmd in ("mine", "collect"):

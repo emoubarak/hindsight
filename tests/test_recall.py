@@ -26,7 +26,8 @@ class Env(unittest.TestCase):
         self.tmp = tempfile.TemporaryDirectory()
         self.home = self.tmp.name
         self.projects = os.path.join(self.home, ".claude", "projects")
-        self.env = {"PATH": os.environ["PATH"], "HOME": self.home, "HINDSIGHT_DATA": os.path.join(self.home, "data")}
+        self.env = {"PATH": os.environ["PATH"], "HOME": self.home, "HINDSIGHT_DATA": os.path.join(self.home, "data"),
+                    "PYTHONPATH": os.pathsep.join(p for p in sys.path if p)}
         write_session(self.projects, "aaaa1111", [
             {"type": "ai-title", "title": "Staging deploy"},
             user("how do we deploy the api to staging?", "2026-09-01T10:00:00Z"),

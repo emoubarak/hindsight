@@ -41,7 +41,8 @@ class Base(unittest.TestCase):
         for s in ("deploy", "shared-a", "shared-b", "notes", "scripted", "old"):
             os.makedirs(os.path.join(self.claude, "skills", s))
             open(os.path.join(self.claude, "skills", s, "SKILL.md"), "w").close()
-        self.env = {"PATH": os.environ["PATH"], "HOME": self.home, "HINDSIGHT_DATA": os.path.join(self.home, "data")}
+        self.env = {"PATH": os.environ["PATH"], "HOME": self.home, "HINDSIGHT_DATA": os.path.join(self.home, "data"),
+                    "PYTHONPATH": os.pathsep.join(p for p in sys.path if p)}
         os.makedirs(os.path.dirname(self.cards))
         self.session("s1", [skill_call("deploy", day(2)), slash("shared-a", day(3)), slash("model", day(3))])
         self.session("s2", [bash(f"python3 {self.claude}/skills/scripted/run.py --x", day(1)),

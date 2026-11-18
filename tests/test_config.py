@@ -42,6 +42,33 @@ class Config(unittest.TestCase):
         self.assertNotIn("correct-horse-battery", corpus)
         self.assertIn("[secret]", corpus)
 
+    def test_secret_scrubs_existing_corpus_in_place(self):
+        corpus = os.path.join(self.home, "data", "corpus", "laptop")
+        os.makedirs(corpus)
+        s = {"machine": "laptop", "project": "p", "title": "t", "first": "2026-01-01T00:00:00Z", "last": "2026-01-01T00:00:00Z",
+             "events": [["U", "the vault phrase is correct-horse-battery today", "2026-01-01T00:00:00Z"]]}
+        with open(os.path.join(corpus, "history-1.json"), "w") as f:
+            json.dump(s, f)
+        r = self.mine("secret", stdin="correct-horse-battery\n")
+        self.assertIn("1 corpus file(s) scrubbed", r.stdout)
+        with open(os.path.join(corpus, "history-1.json")) as f:
+            body = f.read()
+        self.assertNotIn("correct-horse-battery", body)
+
+    def test_redact_catches_french_key_phrases_and_uuid_hex_keys(self):
+        sys.path.insert(0, os.path.join(ROOT, "scripts"))
+        from signals import redact
+        for text, secret in (("la clé api c'est abcd1234efgh", "abcd1234efgh"),
+                             ("token est zzzz9999yyyy", "zzzz9999yyyy"),
+                             ("key 123e4567-e89b-12d3-a456-426614174000:0123456789abcdef0123", "0123456789abcdef0123")):
+            self.assertNotIn(secret, redact(text), text)
+
+    def test_policy_subcommand(self):
+        self.assertIn("no policy file", self.mine("policy").stdout)
+        with open(os.path.join(self.cfg, "policy.md"), "w") as f:
+            f.write("Write rules in French.\n")
+        self.assertIn("Write rules in French.", self.mine("policy").stdout)
+
     def test_digest_extension_is_appended_and_failures_are_one_line(self):
         d = os.path.join(self.cfg, "digest.d")
         os.makedirs(d)
