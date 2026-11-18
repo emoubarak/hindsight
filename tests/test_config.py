@@ -63,6 +63,19 @@ class Config(unittest.TestCase):
                              ("key 123e4567-e89b-12d3-a456-426614174000:0123456789abcdef0123", "0123456789abcdef0123")):
             self.assertNotIn(secret, redact(text), text)
 
+    def test_scrub_rewrites_old_corpus_with_current_patterns(self):
+        corpus = os.path.join(self.home, "data", "corpus", "laptop")
+        os.makedirs(corpus)
+        s = {"machine": "laptop", "project": "p", "title": "t", "first": "2026-01-01T00:00:00Z", "last": "2026-01-01T00:00:00Z",
+             "events": [["U", "the api key is abcd1234efgh5678 ok", "2026-01-01T00:00:00Z"]]}
+        with open(os.path.join(corpus, "old.json"), "w") as f:
+            json.dump(s, f)
+        r = self.mine("scrub")
+        self.assertIn("1 corpus file(s) rewritten", r.stdout)
+        with open(os.path.join(corpus, "old.json")) as f:
+            self.assertNotIn("abcd1234efgh5678", f.read())
+        self.assertIn("0 corpus file(s) rewritten", self.mine("scrub").stdout)
+
     def test_policy_subcommand(self):
         self.assertIn("no policy file", self.mine("policy").stdout)
         with open(os.path.join(self.cfg, "policy.md"), "w") as f:

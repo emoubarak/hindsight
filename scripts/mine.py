@@ -12,6 +12,7 @@
                    ("name user@host" per line) into the data directory; `collect` runs it first
   mine.py secret   read a secret on stdin, store its SHA-256 in $HINDSIGHT_CONFIG/secret-hashes and erase every
                    occurrence from the corpus in place (sessions rebuilt from older sources stay intact)
+  mine.py scrub    apply today's secret redaction to the whole corpus in place (after the patterns improved)
   mine.py policy   print $HINDSIGHT_CONFIG/policy.md (what /hindsight:learn reads)
   mine.py pending  "<corrections> <feedback memories>" waiting since the last digest
 
@@ -377,16 +378,12 @@ def cmd_pull():
         print(f"{name}: {'ok' if r.returncode == 0 else 'unreachable (' + r.stderr.strip()[:80] + ')'}")
 
 
-def cmd_secret():
-    import getpass, hashlib
-    v = sys.stdin.readline().strip() if not sys.stdin.isatty() else getpass.getpass("secret to erase: ")
-    private_dir(CONFIG)
-    p = os.path.join(CONFIG, "secret-hashes")
-    with open(p, "a") as f:
-        f.write(hashlib.sha256(v.encode()).hexdigest() + "\n")
-    os.chmod(p, 0o600)
+def scrub_corpus():
+    """Apply today's redaction to every distilled session already on disk, in place. Needed when the patterns got
+    better, or when a secret was declared after the fact: sessions rebuilt from older sources (history imports,
+    transcripts that expired) cannot be re-mined, so they are rewritten instead."""
     import signals
-    signals._HASHES = None          # reread the file we just appended to
+    signals._HASHES = None          # reread secret-hashes, which may just have been appended to
     changed = 0
     for f in glob.glob(os.path.join(CORPUS, "*", "*.json")):
         try:
@@ -401,6 +398,22 @@ def cmd_secret():
             json.dump(s, open(f + ".tmp", "w"), ensure_ascii=False)
             os.replace(f + ".tmp", f)
             changed += 1
+    return changed
+
+
+def cmd_scrub():
+    print(f"{scrub_corpus()} corpus file(s) rewritten; the search index refreshes on its own")
+
+
+def cmd_secret():
+    import getpass, hashlib
+    v = sys.stdin.readline().strip() if not sys.stdin.isatty() else getpass.getpass("secret to erase: ")
+    private_dir(CONFIG)
+    p = os.path.join(CONFIG, "secret-hashes")
+    with open(p, "a") as f:
+        f.write(hashlib.sha256(v.encode()).hexdigest() + "\n")
+    os.chmod(p, 0o600)
+    changed = scrub_corpus()
     print(f"hash stored; {changed} corpus file(s) scrubbed; the search index refreshes on its own")
 
 
@@ -462,7 +475,7 @@ def cmd_stats():
 if __name__ == "__main__":
     cmd = sys.argv[1] if len(sys.argv) > 1 else "stats"
     cmds = {"mine": cmd_mine, "digest": cmd_digest, "done": cmd_done, "stats": cmd_stats,
-            "collect": cmd_collect, "pending": cmd_pending, "pull": cmd_pull, "secret": cmd_secret, "policy": cmd_policy}
+            "collect": cmd_collect, "pending": cmd_pending, "pull": cmd_pull, "secret": cmd_secret, "policy": cmd_policy, "scrub": cmd_scrub}
     if cmd not in cmds:
         sys.exit(__doc__)
     if cmd in ("mine", "collect"):
