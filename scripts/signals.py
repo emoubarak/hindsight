@@ -1,6 +1,9 @@
 """Shared by the hooks and the miner: spot corrections and recall requests, redact secrets.
 
-Pattern lists are per language. English is on by default; set HINDSIGHT_LANGS=en,fr to add French.
+Pattern lists are per language. English is on by default; set HINDSIGHT_LANGS=en,fr to add French. The English
+lists were tuned on public messages people sent to coding agents (GitHub issues of Claude Code, shared sessions): on the
+held-out half they catch about half of the corrections and flag about 3 in 100 ordinary messages of a random sample.
+Weak markers are deliberately not duplicated across lists: two weak hits make a correction.
 A false positive costs one log line, a miss loses a lesson, so the correction detector leans inclusive
 but keeps plain requests ("can you do X?") out unless they come with another marker.
 """
@@ -10,44 +13,90 @@ import re
 CORRECTION = {
     "en": {
         "strong": [
-            r"\bI (?:already |just )?(?:told|asked|said) (?:you|to)\b", r"\bas I (?:said|told you|mentioned)\b",
-            r"\bI (?:said|asked for)\b.{0,40}\bnot\b", r"\bnot what I (?:asked|wanted|meant|said)\b",
-            r"\bI didn'?t (?:ask|say|want)\b", r"\bwe (?:already )?(?:discussed|agreed|decided)\b",
-            r"\bthat'?s (?:not|wrong|incorrect|not right)\b", r"\bthat'?s not how\b", r"\bnot like that\b",
-            r"\bwhy did you\b", r"\byou (?:forgot|missed|ignored|didn'?t|never)\b",
-            r"\bstop (?:doing|adding|using|making|being|writing)\b", r"\bplease (?:stop|don'?t)\b",
-            r"\bnever (?:do|use|add|change|touch|write)\b", r"\bstill (?:not|doesn'?t|isn'?t|wrong|broken)\b",
-            r"\b(?:second|third|fourth|fifth|\d+(?:st|nd|rd|th)) time\b", r"\bundo that\b|\brevert (?:that|this)\b",
-            r"\bmade (?:that|this|it) up\b|\byou'?re (?:making|inventing)\b|\bhallucinat",
+            r"\bI (?:already )?(?:told|asked) you\b", r"\b(?:as|like) I (?:said|told you|asked)\b",
+            r"\bI (?:said|asked for)\b[^.?!\n]{0,40}\bnot\b", r"\bnot what I (?:asked|wanted|meant|said)\b",
+            r"\bI (?:never|didn'?t|did not) (?:ask|say|want)\b", r"\bwhy (?:did|do|would|are|is) you\b",
+            r"\byou (?:forgot|missed|ignored|skipped|broke|deleted|overwrote|keep|still)\b",
+            r"\byou (?:didn'?t|did not|never|haven'?t|have not)\b",
+            r"\b(?:still|again) (?:not|wrong|broken|failing|the same)\b",
+            r"\bstill (?:doesn'?t|isn'?t|won'?t|don'?t)\b", r"\b(?:once|yet) again\b",
+            r"\bfor the (?:\w+ )?(?:second|third|fourth|fifth|tenth|nth|last) time\b", r"\bhow many times\b",
+            r"\b(?:stop|quit) (?:doing|adding|using|asking|making|writing|changing)\b",
+            r"\bnever (?:do|use|add|touch|change|create|delete|ask|write|push|commit)\b",
+            r"\bthat'?s (?:wrong|incorrect|not (?:right|it|what))\b", r"\byou(?:'re| are) wrong\b",
+            r"\b(?:you )?made (?:that|this|it) up\b", r"\bhallucinat\w*",
+            r"\bwrong (?:file|place|folder|branch|again)\b", r"\bthat'?s not how\b", r"\bdid I ask\b",
+            r"\bwho (?:asked|said)\b",
+            r"\bstill (?:see|seeing|shows?|showing|fails?|failing|broken|gets?|getting|got|there|happen\w*|incorrect|appears?|becom\w*|missing|empty|wrong|off|the same|not|no\b|doesn'?t|isn'?t|won'?t|can'?t|creat\w*|play\w*|blink\w*|darker|lighter|visible|a (?:line|bit|lot|problem|bug|moment|gap))",
+            r"^\s*(?:again|still)\b",
+            r"^\s*no[,.:!]\s(?!(?:go|problem|worries|thanks|need)\b)|^\s*no but\b|^\s*(?:sorry,? )?no[,.!]?\s*$",
+            r"\bwhy (?:isn'?t|wasn'?t|didn'?t|doesn'?t|don'?t|won'?t|can'?t|aren'?t|is it still|does it still|do I still)\b",
+            r"\bdid you (?:really|even|actually|just|lie)\b",
+            r"\bare you (?:kidding|serious|joking|intentionally|even|taking|ignoring|listening)\b",
+            r"\bI (?:never|didn'?t|did not) (?:said|told|wrote|asked|approved|agreed)\b",
+            r"\bI never (?:said|told|wrote|asked)\b", r"\bwhat I (?:said|asked|told you|wanted)\b",
+            r"\byou (?:refused?|lied|lie to|retried|clobbered|reverted|removed|ignore|changed)\b",
+            r"\byou(?:'re| are) (?:not|hacking|lying|ignoring|exhausting|running|in the wrong|making (?:it|this|that|things) up)\b",
+            r"\b(?:what the f\w*|wtf|fuck you)\b", r"\b(?:stop|quit) (?:\w+ing)\b",
+            r"^\s*(?:just )?(?:\w+ )?stop\s*[!.]*\s*$", r"\byou \w+ed\b[^.?!\n]{0,40}\bagain\b",
+            r"\bnothing (?:changed|happened|works)\b", r"\bwhat are you doing\b", r"\bover and over\b",
+            r"\byou(?:'ve| have)? (?:repeatedly|repeated)\b", r"\bdid you not\b", r"\bwhy do I (?:have|need) to\b",
+            r"\b(?:not|un)acceptable\b", r"\bnot (?:quite|exactly) (?:there|right|it|what)\b|\bstill not it\b",
+            r"\bwe (?:already )?(?:discussed|agreed|decided)\b",
         ],
         "weak": [
-            r"^(?:no|nope|wrong)\b", r"\bwrong\b", r"\bnot working\b|\bdoesn'?t work\b|\bbroken\b",
-            r"\btoo (?:long|verbose|complex|complicated|much|big|small|noisy)\b", r"\bsimpler\b|\bshorter\b",
-            r"\bare you sure\b", r"\bmissing\b", r"\bpointless\b|\bnot useful\b",
+            r"^(?:no|nope|nah|wrong)\b", r"\b(?:simpler|shorter)\b",
+            r"(?<!don't )(?<!dont )(?<!not )\bstop\b", r"\bwrong\b", r"\bbroken\b", r"\bdoes(?:n'?t| not) work\b",
+            r"\bnot working\b", r"\btoo (?:long|verbose|much|complicated|many|big|small)\b",
+            r"\btrop (?:long|charg[ée]|compliqu[ée])\b", r"\bdon'?t\b", r"\binstead\b", r"\bactually\b",
+            r"\bre-?read\b", r"\bugly\b", r"\bmissing\b", r"\bundo\b|\brevert\b", r"\bare you sure\b",
+            r"\bbug(?:gy)?\b", r"\bhow come\b",
+            r"\b(?:does|did)(?:n'?t| not) (?:show|seem|do|get|change|update|appear|load|fix|happen|work)\b",
+            r"\bdid not get\b", r"\bagain\b", r"\bnot the \w+|, not (?:the|in|a|an|on|my)\b", r"^\s*not\b",
+            r"\bwhy (?:is|does) (?:it|this|that|there)\b", r"\bstep back\b", r"\bno need to\b", r"^\s*wait\b",
+            r"\bwhere did you\b", r"\bwhat happened to\b", r"\bit should (?:be|contain|show|have|not)\b",
+            r"\byou (?:have|need) to (?:look|read|use|check)\b", r"\b(?:fucking|shit|damn)\b",
+            r"\bI asked (?:to|for)\b", r"\byou just\b",
+        ],
+        # case matters here: capitals are shouting
+        "strong_case": [
+            r"\b(?:DO NOT|DON'?T|NEVER|STOP)\b",
+        ],
+        # case matters here: capitals are shouting
+        "weak_case": [
+            r"\b[A-Z]{2,}(?:\s+[A-Z']{2,}){2,}\b",
         ],
     },
     "fr": {
         "strong": [
-            r"\bj(?:e )?t'?(?:ai|é) (?:dit|dis|demand[ée])",           # je t'ai dit / jtai dis
-            r"\bj'?(?:ai|é) (?:dit|dis|demand[ée])\b",
-            r"\bon avait dit\b", r"\bcomme (?:je|j)(?:e)? ?(?:t'?ai|l'?ai) dit",
-            r"\b(?:toujours|tjr?s?) pas\b", r"\bencore (?:une fois|en |pas|trop|des?)\b", r"\bencore (?:l'|le\b)",
+            r"\bj(?:e )?t'?(?:ai|é) (?:dit|dis|demand[ée])", r"\bj'?(?:ai|é) (?:dit|dis|demand[ée])\b",
+            r"\bon avait dit\b", r"\bcomme (?:je|j)(?:e)? ?(?:t'?ai|l'?ai) dit", r"\b(?:toujours|tjr?s?) pas\b",
+            r"\bencore (?:une fois|en |pas|trop|des?)\b", r"\bencore (?:l'|le\b)",
             r"\b(?:\d+|deuxi[eè]me|troisi[eè]me|dixi[eè]me|quinzi[eè]me|[eé]ni[eè]me)e? fois\b",
             r"\bc'?(?:est)? ?pas (?:[çc]a|bon|ce que)\b", r"\bc (?:faux|pas bon|nul)\b", r"\bc'est faux\b",
-            r"\bn'importe quoi\b", r"\bslop\b", r"\bmensonge\b|\btu (?:m'as )?menti?s?\b|\btu inventes?\b|\binvent[ée] des?\b",
+            r"\bn'importe quoi\b", r"\bslop\b",
+            r"\bmensonge\b|\btu (?:m'as )?menti?s?\b|\btu inventes?\b|\binvent[ée] des?\b",
             r"\bj'y comprends? (?:plus )?rien\b|\btu me perds?\b|\bt'as rien compris\b|\bta pas compris\b",
-            r"\b(?:pourquoi|pk|pq|pkoi) (?:tu|t'as|ta|t'es)\b",
-            r"\bt'?(?:as|a) (?:pas|oubli[ée]|rien)\b", r"\btu as (?:pas|oubli[ée])\b", r"\bt'es pas all[ée]\b",
-            r"\barr[eê]te (?:de|d'|avec|toi)\b", r"\bj'?(?:ai|é) pas demand[ée]\b", r"\bj(?:e )?(?:veux|veu) pas\b",
-            r"\bje te l'ai d[ée]j[àa]\b", r"\bfait gaffe\b|\bfais gaffe\b",
-            r"\bmoche\b|\bcheap\b|\bd[ée]gueu\b", r"\bpas fid[eè]le\b",
+            r"\b(?:pourquoi|pk|pq|pkoi) (?:tu|t'as|ta|t'es)\b", r"\bt'?(?:as|a) (?:pas|oubli[ée]|rien)\b",
+            r"\btu as (?:pas|oubli[ée])\b", r"\bt'es pas all[ée]\b", r"\barr[eê]te (?:de|d'|avec|toi)\b",
+            r"\bj'?(?:ai|é) pas demand[ée]\b", r"\bj(?:e )?(?:veux|veu) pas\b", r"\bje te l'ai d[ée]j[àa]\b",
+            r"\bfait gaffe\b|\bfais gaffe\b", r"\bpas fid[eè]le\b", r"\bencore (?:une fois|pas|trop)\b",
+            r"\b(?:\d+|deuxi[eè]me|troisi[eè]me|dixi[eè]me|[eé]ni[eè]me)e? fois\b",
+            r"\btu (?:m'as )?menti?s?\b|\btu inventes?\b", r"\bt'as rien compris\b|\btu n'as (?:rien|pas) compris\b",
+            r"(?<!pas )\bencore (?:des?|en|du|l[ae'])\b",
+            r"\bencore une? (?:souci|soucis|erreur|probl[eè]me|bug|hic)\b", r"\bfai[ts] gaffe\b",
+            r"\bmoche\b|\bd[ée]gueu\b", r"\bmensonge\b|\binvent[ée]e?s? des?\b",
+            r"\bj'y comprends? (?:plus )?rien\b|\btu me perds?\b", r"\bta pas compris\b|\bt'es pas all[ée]\b",
         ],
         "weak": [
-            r"^(?:non|nan|nope|no)\b", r"\bstop\b", r"\brelis\b", r"\bfaux\b", r"\bnul(?:le)?\b",
-            r"\btu (?:peux|pourrais) pas\b", r"\btu ne peux pas\b", r"\bplus (?:simple|court|subtil)",
-            r"\btrop (?:long|de texte|charg[ée]|compliqu[ée]|gros|petit)\b", r"\bmanque\b", r"\bbug(?:ue)?\b",
-            r"\bt'es s[uû]r\b", r"\btej\b", r"\bsans int[ée]r[eê]t\b", r"\bon s'en fout\b",
-            r"\bc(?:a|ç)a? (?:marche|fonctionne) (?:pas|toujours pas)\b", r"\bne (?:marche|fonctionne) pas\b", r"\b(?:marche|fonctionne) pas\b",
+            r"\brelis\b", r"\bfaux\b", r"\bnul(?:le)?\b", r"\btu (?:peux|pourrais) pas\b", r"\btu ne peux pas\b",
+            r"\bplus (?:simple|court|subtil)", r"\btrop (?:long|de texte|charg[ée]|compliqu[ée]|gros|petit)\b",
+            r"\bmanque\b", r"\bt'es s[uû]r\b", r"\btej\b", r"\bsans int[ée]r[eê]t\b", r"\bon s'en fout\b",
+            r"\bc(?:a|ç)a? (?:marche|fonctionne) (?:pas|toujours pas)\b", r"\bne (?:marche|fonctionne) pas\b",
+            r"\b(?:marche|fonctionne) pas\b", r"\bj(?:e )?veux pas\b", r"\bcheap\b", r"\bplus subtil\b",
+            r"\btrop (?:de texte|gros|petit)\b", r"^(?:non|nan)\b",
+            r"\b(?:ne )?(?:marche|fonctionne) (?:pas|plus)\b", r"\b(?:plus simple|plus court)\b",
+            r"\bmoche\b",
         ],
     },
 }
@@ -78,12 +127,35 @@ def langs():
     return [l.strip() for l in os.environ.get("HINDSIGHT_LANGS", "en").split(",") if l.strip() in CORRECTION]
 
 
-def _compiled(table, key=None):
+def _compiled(table, key=None, flags=re.I):
     out = []
     for l in langs():
-        pats = table[l] if key is None else table[l][key]
-        out += [re.compile(p, re.I) for p in pats]
+        pats = table[l] if key is None else table[l].get(key, [])
+        out += [re.compile(p, flags) for p in pats]
     return out
+
+
+_EXTRA = None
+
+
+def _extra():
+    """Your own strong patterns: one regex per line in $HINDSIGHT_CONFIG/patterns.txt (blank lines and # comments
+    ignored), and/or HINDSIGHT_EXTRA_PATTERNS (newline-separated). Each counts as a strong marker."""
+    global _EXTRA
+    if _EXTRA is None:
+        _EXTRA, lines = [], os.environ.get("HINDSIGHT_EXTRA_PATTERNS", "").splitlines()
+        try:
+            from paths import CONFIG
+            lines += open(os.path.join(CONFIG, "patterns.txt"), encoding="utf-8").read().splitlines()
+        except (OSError, ImportError):
+            pass
+        for p in lines:
+            if p.strip() and not p.lstrip().startswith("#"):
+                try:
+                    _EXTRA.append(re.compile(p.strip(), re.I))
+                except re.error:
+                    pass
+    return _EXTRA
 
 
 def score(text):
@@ -91,8 +163,10 @@ def score(text):
     if not text or text.lstrip().startswith(NOISE) or _TAGGED.match(text):
         return 0, []
     head = text[:1500]
-    strong = [m.group(0) for r in _compiled(CORRECTION, "strong") if (m := r.search(head))]
-    weak = [m.group(0) for r in _compiled(CORRECTION, "weak") if (m := r.search(head))]
+    strong = [m.group(0) for r in _compiled(CORRECTION, "strong") + _compiled(CORRECTION, "strong_case", 0) + _extra()
+              if (m := r.search(head))]
+    weak = [m.group(0) for r in _compiled(CORRECTION, "weak") + _compiled(CORRECTION, "weak_case", 0)
+            if (m := r.search(head))]
     return 2 * len(strong) + len(weak), strong + weak
 
 

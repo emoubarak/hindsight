@@ -76,6 +76,24 @@ class Config(unittest.TestCase):
             self.assertNotIn("abcd1234efgh5678", f.read())
         self.assertIn("0 corpus file(s) rewritten", self.mine("scrub").stdout)
 
+    def test_detector_english_shouting_and_own_patterns(self):
+        sys.path.insert(0, os.path.join(ROOT, "scripts"))
+        os.environ["HINDSIGHT_CONFIG"] = self.cfg
+        import importlib, signals
+        importlib.reload(signals)
+        signals._EXTRA = None
+        try:
+            self.assertGreaterEqual(signals.score("DO NOT touch the config file again")[0], 2)
+            self.assertLess(signals.score("can you add a retry to the upload?")[0], 2)
+            self.assertLess(signals.score("fix it, it is cheap but fine")[0], 2)
+            with open(os.path.join(self.cfg, "patterns.txt"), "w") as f:
+                f.write("# mine\nbanana split\n")
+            signals._EXTRA = None
+            self.assertGreaterEqual(signals.score("banana split is not what I wanted here")[0], 2)
+        finally:
+            os.environ.pop("HINDSIGHT_CONFIG", None)
+            importlib.reload(signals)
+
     def test_policy_subcommand(self):
         self.assertIn("no policy file", self.mine("policy").stdout)
         with open(os.path.join(self.cfg, "policy.md"), "w") as f:
