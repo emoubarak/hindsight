@@ -10,6 +10,11 @@ but keeps plain requests ("can you do X?") out unless they come with another mar
 import os
 import re
 
+
+def _config_dir():
+    """Same rule as paths.CONFIG, repeated here so this file works on its own (it is also embedded elsewhere)."""
+    return os.environ.get("HINDSIGHT_CONFIG") or os.path.join(os.path.expanduser("~"), ".config/hindsight")
+
 CORRECTION = {
     "en": {
         "strong": [
@@ -145,9 +150,8 @@ def _extra():
     if _EXTRA is None:
         _EXTRA, lines = [], os.environ.get("HINDSIGHT_EXTRA_PATTERNS", "").splitlines()
         try:
-            from paths import CONFIG
-            lines += open(os.path.join(CONFIG, "patterns.txt"), encoding="utf-8").read().splitlines()
-        except (OSError, ImportError):
+            lines += open(os.path.join(_config_dir(), "patterns.txt"), encoding="utf-8").read().splitlines()
+        except OSError:
             pass
         for p in lines:
             if p.strip() and not p.lstrip().startswith("#"):
@@ -231,9 +235,8 @@ def _known():
     the value itself is never stored, yet every occurrence is erased from what gets archived."""
     global _HASHES
     if _HASHES is None:
-        from paths import CONFIG
         try:
-            _HASHES = {l.strip() for l in open(os.path.join(CONFIG, "secret-hashes")) if l.strip()}
+            _HASHES = {l.strip() for l in open(os.path.join(_config_dir(), "secret-hashes")) if l.strip()}
         except OSError:
             _HASHES = set()
     return _HASHES
